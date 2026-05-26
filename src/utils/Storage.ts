@@ -3,7 +3,7 @@ import { LocalStorage } from './LocalStorage';
 import { CloudStorage } from './CloudStorage';
 import { Project, TimeLog } from '../types';
 
-export const Storage = {
+export const AppStorage = {
   async loadProjects(): Promise<Project[]> {
     if (auth.currentUser) {
       const cloudProjects = await CloudStorage.loadProjects(auth.currentUser.uid);

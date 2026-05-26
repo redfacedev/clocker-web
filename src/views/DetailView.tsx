@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Storage } from '../utils/Storage';
+import { AppStorage } from '../utils/Storage';
 import { LocalStorage } from '../utils/LocalStorage';
 import { formatDuration, formatTime, formatDate, getDurationSeconds, isActive } from '../utils/TimeUtils';
 import TimeLogTable from '../components/TimeLogTable';
 import EditLogDialog from '../components/EditLogDialog';
-import NewProjectDialog from '../components/NewProjectDialog';
+import ProjectDialog from '../components/ProjectDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CreateTagDialog from '../components/CreateTagDialog';
 import ProjectIcon from '../components/ProjectIcon';
 import arrowBackIcon from '../assets/arrow_back.svg';
-import { Project, ProjectFormData, Tag, TAG_COLORS, TimeLog } from '../types';
+import { LogSortColumn, Project, ProjectFormData, Tag, TAG_COLORS, TimeLog } from '../types';
+import { generateTagId } from '../utils/idUtils';
 import './DetailView.css';
 
 interface Props {
@@ -27,19 +28,19 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<Date | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showEditLogDialog, setShowEditLogDialog] = useState(false);
   const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
-  const [showProjectDialog, setShowProjectDialog] = useState(false);
+  const [showEditProjectDialog, setShowEditProjectDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCreateTagDialog, setShowCreateTagDialog] = useState(false);
   const [tagTargetLog, setTagTargetLog] = useState<TimeLog | null>(null);
-  const [sortColumn, setSortColumn] = useState(0);
+  const [sortColumn, setSortColumn] = useState<LogSortColumn>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [backupCount, setBackupCount] = useState(0);
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
 
   useEffect(() => {
-    Storage.loadLogs(project.id).then(loadedLogs => {
+    AppStorage.loadLogs(project.id).then(loadedLogs => {
       setLogs(loadedLogs);
       syncClockState(loadedLogs);
       setBackupCount(LocalStorage.getBackupCount(project.id));
@@ -87,7 +88,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
     }
 
     setLogs(updatedLogs);
-    Storage.saveLogs(project.id, updatedLogs);
+    AppStorage.saveLogs(project.id, updatedLogs);
     onActiveChange(!clockedIn);
   };
 
@@ -95,15 +96,15 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
     backupBeforeMutation(logs);
     const updatedLogs = logs.filter(existingLog => existingLog !== log);
     setLogs(updatedLogs);
-    Storage.saveLogs(project.id, updatedLogs);
+    AppStorage.saveLogs(project.id, updatedLogs);
   };
 
-  const handleEditDialogClose = () => {
-    setShowEditDialog(false);
+  const handleEditLogDialogClose = () => {
+    setShowEditLogDialog(false);
     setEditingLog(null);
   };
 
-  const handleEditDialogSubmit = (submittedLog: TimeLog) => {
+  const handleEditLogDialogSubmit = (submittedLog: TimeLog) => {
     backupBeforeMutation(logs);
     let updatedLogs: TimeLog[];
     if (editingLog) {
@@ -114,8 +115,8 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
       updatedLogs = [...logs, submittedLog];
     }
     setLogs(updatedLogs);
-    Storage.saveLogs(project.id, updatedLogs);
-    handleEditDialogClose();
+    AppStorage.saveLogs(project.id, updatedLogs);
+    handleEditLogDialogClose();
   };
 
   const handleTagChange = (log: TimeLog, tagId: string | null) => {
@@ -124,7 +125,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
       existingLog === log ? { ...existingLog, tagId: tagId ?? undefined } : existingLog
     );
     setLogs(updatedLogs);
-    Storage.saveLogs(project.id, updatedLogs);
+    AppStorage.saveLogs(project.id, updatedLogs);
   };
 
   const handleCreateTagOpen = (log: TimeLog) => {
@@ -139,14 +140,14 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
     onTagsChange(project.id, updatedTags);
     const updatedLogs = logs.map(existingLog => existingLog.tagId === tagId ? { ...existingLog, tagId: undefined } : existingLog);
     setLogs(updatedLogs);
-    Storage.saveLogs(project.id, updatedLogs);
+    AppStorage.saveLogs(project.id, updatedLogs);
   };
 
   const handleRollback = () => {
     const restoredLogs = LocalStorage.popLatestBackup(project.id);
     if (!restoredLogs) return;
     setLogs(restoredLogs);
-    Storage.saveLogs(project.id, restoredLogs);
+    AppStorage.saveLogs(project.id, restoredLogs);
     syncClockState(restoredLogs);
     setBackupCount(LocalStorage.getBackupCount(project.id));
     setShowRollbackConfirm(false);
@@ -158,10 +159,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   };
 
   const handleCreateTagSubmit = (tagData: Omit<Tag, 'id'>) => {
-    const newTag: Tag = {
-      id: `tag_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      ...tagData,
-    };
+    const newTag: Tag = { id: generateTagId(), ...tagData };
     const updatedTags = [...project.tags, newTag];
     onTagsChange(project.id, updatedTags);
 
@@ -171,7 +169,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
         existingLog === tagTargetLog ? { ...existingLog, tagId: newTag.id } : existingLog
       );
       setLogs(updatedLogs);
-      Storage.saveLogs(project.id, updatedLogs);
+      AppStorage.saveLogs(project.id, updatedLogs);
     }
 
     setShowCreateTagDialog(false);
@@ -200,7 +198,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
     URL.revokeObjectURL(url);
   };
 
-  const handleSort = (column: number) => {
+  const handleSort = (column: LogSortColumn) => {
     if (sortColumn === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -230,7 +228,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
 
   const getSortedLogs = (): TimeLog[] => {
     return [...logs].sort((firstLog, secondLog) => {
-      if (sortColumn === 0) {
+      if (sortColumn === 'date') {
         const dateDiff = normalizeToStartOfDay(firstLog.date) - normalizeToStartOfDay(secondLog.date);
         if (dateDiff !== 0) return sortOrder === 'asc' ? dateDiff : -dateDiff;
         const startTimeDiff = firstLog.startTime.getTime() - secondLog.startTime.getTime();
@@ -257,7 +255,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
           {project.description && <p>{project.description}</p>}
         </div>
         <div className="header-actions">
-          <button className="btn-secondary" onClick={() => setShowProjectDialog(true)}>Edit</button>
+          <button className="btn-secondary" onClick={() => setShowEditProjectDialog(true)}>Edit</button>
           <button className="btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button>
         </div>
       </div>
@@ -281,14 +279,14 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
                 ↩ Rollback{backupCount > 1 ? ` (${backupCount})` : ''}
               </button>
             )}
-            <button className="btn-secondary" onClick={() => { setEditingLog(null); setShowEditDialog(true); }}>+ Add Entry</button>
+            <button className="btn-secondary" onClick={() => { setEditingLog(null); setShowEditLogDialog(true); }}>+ Add Entry</button>
             <button className="btn-secondary" onClick={handleExportCsv}>Export CSV</button>
           </div>
         </div>
         <TimeLogTable
           logs={getSortedLogs()}
           tags={project.tags}
-          onEdit={(log) => { setEditingLog(log); setShowEditDialog(true); }}
+          onEdit={(log) => { setEditingLog(log); setShowEditLogDialog(true); }}
           onDelete={handleDeleteRow}
           onSort={handleSort}
           onTagChange={handleTagChange}
@@ -317,16 +315,16 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
         </div>
       </div>
 
-      {showEditDialog && (
-        <EditLogDialog log={editingLog} onClose={handleEditDialogClose} onSubmit={handleEditDialogSubmit} />
+      {showEditLogDialog && (
+        <EditLogDialog log={editingLog} onClose={handleEditLogDialogClose} onSubmit={handleEditLogDialogSubmit} />
       )}
 
-      {showProjectDialog && (
-        <NewProjectDialog
+      {showEditProjectDialog && (
+        <ProjectDialog
           project={project}
           projects={projects}
-          onClose={() => setShowProjectDialog(false)}
-          onSubmit={(data) => { onEdit(data); setShowProjectDialog(false); }}
+          onClose={() => setShowEditProjectDialog(false)}
+          onSubmit={(data) => { onEdit(data); setShowEditProjectDialog(false); }}
         />
       )}
 

@@ -48,3 +48,7 @@ export interface TimeLog {
   endTime: Date | null;
   tagId?: string;
 }
+
+export type AppView = 'dashboard' | 'project-detail';
+
+export type LogSortColumn = 'date' | 'duration';

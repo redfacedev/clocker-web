@@ -1,41 +1,36 @@
 import { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import './App.css';
-import GridView from './views/GridView';
+import DashboardView from './views/DashboardView';
 import DetailView from './views/DetailView';
 import { LocalStorage } from './utils/LocalStorage';
-import { Storage } from './utils/Storage';
+import { AppStorage } from './utils/Storage';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider, githubProvider } from './firebase';
-import { Project, ProjectFormData, Tag } from './types';
+import { AppView, Project, ProjectFormData, Tag } from './types';
+import { generateProjectId } from './utils/idUtils';
 
 function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [projects, setProjects] = useState<Project[]>(() => LocalStorage.loadProjects());
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [currentView, setCurrentView] = useState<'grid' | 'detail'>('grid');
+  const [currentView, setCurrentView] = useState<AppView>('dashboard');
   const [logSyncVersion, setLogSyncVersion] = useState(0);
-
-  const generateId = (name: string): string => {
-    const sanitizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    const random = Math.floor(Math.random() * 9000) + 1000;
-    return `${sanitizedName}_${Date.now()}_${random}`;
-  };
 
   const handleProjectSelect = (project: Project) => {
     setSelectedProject(project);
-    setCurrentView('detail');
+    setCurrentView('project-detail');
   };
 
   const handleBack = () => {
-    setCurrentView('grid');
+    setCurrentView('dashboard');
     setSelectedProject(null);
   };
 
   const handleAddProject = (formData: ProjectFormData) => {
     let newProject: Project = {
       ...formData,
-      id: formData.id ?? generateId(formData.name),
+      id: formData.id ?? generateProjectId(formData.name),
       active: false,
       starred: false,
       tags: [],
@@ -49,7 +44,7 @@ function App() {
 
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-    Storage.saveProjects(updatedProjects);
+    AppStorage.saveProjects(updatedProjects);
   };
 
   const handleEditProject = (formData: ProjectFormData) => {
@@ -60,17 +55,17 @@ function App() {
       updatedProjects[index] = updatedProject;
       setProjects(updatedProjects);
       setSelectedProject(updatedProject);
-      Storage.saveProjects(updatedProjects);
+      AppStorage.saveProjects(updatedProjects);
     }
   };
 
   const handleDeleteProject = (projectId: string) => {
     const updatedProjects = projects.filter(project => project.id !== projectId);
     setProjects(updatedProjects);
-    Storage.saveProjects(updatedProjects);
+    AppStorage.saveProjects(updatedProjects);
     LocalStorage.deleteProjectBackups(projectId);
     setSelectedProject(null);
-    setCurrentView('grid');
+    setCurrentView('dashboard');
   };
 
   const handleActiveChange = (projectId: string, active: boolean) => {
@@ -79,7 +74,7 @@ function App() {
     );
     setProjects(updatedProjects);
     if (selectedProject?.id === projectId) setSelectedProject(prev => prev ? { ...prev, active } : prev);
-    Storage.saveProjects(updatedProjects);
+    AppStorage.saveProjects(updatedProjects);
   };
 
   const handleStarProject = (projectId: string) => {
@@ -87,14 +82,14 @@ function App() {
       project.id === projectId ? { ...project, starred: !project.starred } : project
     );
     setProjects(updatedProjects);
-    Storage.saveProjects(updatedProjects);
+    AppStorage.saveProjects(updatedProjects);
   };
 
   const handleDeleteProjects = (projectIds: string[]) => {
     const idSet = new Set(projectIds);
     const updatedProjects = projects.filter(project => !idSet.has(project.id));
     setProjects(updatedProjects);
-    Storage.saveProjects(updatedProjects);
+    AppStorage.saveProjects(updatedProjects);
   };
 
   const handleTagsChange = (projectId: string, tags: Tag[]) => {
@@ -103,17 +98,21 @@ function App() {
     );
     setProjects(updatedProjects);
     if (selectedProject?.id === projectId) setSelectedProject(prev => prev ? { ...prev, tags } : prev);
-    Storage.saveProjects(updatedProjects);
+    AppStorage.saveProjects(updatedProjects);
   };
+
+  const handleGoogleSignIn = () => signInWithPopup(auth, googleProvider);
+  const handleGithubSignIn = () => signInWithPopup(auth, githubProvider);
+  const handleSignOut = () => signOut(auth);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const loadedProjects = await Storage.loadProjects();
+        const loadedProjects = await AppStorage.loadProjects();
         setProjects(loadedProjects);
         LocalStorage.saveProjects(loadedProjects);
-        await Storage.syncAllLogs(loadedProjects.map(project => project.id));
+        await AppStorage.syncAllLogs(loadedProjects.map(project => project.id));
         setLogSyncVersion(v => v + 1);
       }
     });
@@ -121,17 +120,17 @@ function App() {
 
   return (
     <div className="app">
-      {currentView === 'grid' ? (
-        <GridView
+      {currentView === 'dashboard' ? (
+        <DashboardView
           projects={projects}
           onProjectSelect={handleProjectSelect}
           onAddProject={handleAddProject}
           onDeleteProjects={handleDeleteProjects}
           onStarProject={handleStarProject}
           user={user}
-          onGoogleSignIn={() => signInWithPopup(auth, googleProvider)}
-          onGithubSignIn={() => signInWithPopup(auth, githubProvider)}
-          onSignOut={() => signOut(auth)}
+          onGoogleSignIn={handleGoogleSignIn}
+          onGithubSignIn={handleGithubSignIn}
+          onSignOut={handleSignOut}
           logSyncVersion={logSyncVersion}
         />
       ) : selectedProject && (

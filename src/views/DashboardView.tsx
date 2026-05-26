@@ -2,15 +2,16 @@ import { useState, useRef, useMemo, useLayoutEffect } from 'react';
 import type { User } from 'firebase/auth';
 import accountCircleIcon from '../assets/account_circle.svg';
 import ProjectTile from '../components/ProjectTile';
-import NewProjectDialog from '../components/NewProjectDialog';
+import ProjectDialog from '../components/ProjectDialog';
 import SettingsDialog from '../components/SettingsDialog';
 import PhraseConfirmDialog from '../components/PhraseConfirmDialog';
 import SignInDialog from '../components/SignInDialog';
+import AccountDialog from '../components/AccountDialog';
 import { LocalStorage } from '../utils/LocalStorage';
 import { getDurationSeconds, isActive } from '../utils/TimeUtils';
 import { Project, ProjectFormData } from '../types';
 import ActivityCalendar from '../components/ActivityCalendar';
-import './GridView.css';
+import './DashboardView.css';
 
 const SORT_OPTIONS = [
   { value: 'most-time',    label: 'Most time' },
@@ -34,8 +35,8 @@ interface Props {
   logSyncVersion: number;
 }
 
-function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, onStarProject, user, onGoogleSignIn, onGithubSignIn, onSignOut, logSyncVersion }: Props) {
-  const [showDialog, setShowDialog] = useState(false);
+function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjects, onStarProject, user, onGoogleSignIn, onGithubSignIn, onSignOut, logSyncVersion }: Props) {
+  const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
@@ -146,10 +147,8 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
   };
 
   return (
-    <div
-      className="grid-view"
-    >
-      <header className="grid-header">
+    <div className="dashboard-view">
+      <header className="dashboard-header">
         <h1>Clocker</h1>
         <div className="header-controls">
           <button className="btn-secondary btn-settings" onClick={() => setShowSettings(true)} title="Settings">⚙</button>
@@ -187,7 +186,7 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
                   </button>
                 )}
                 <button className={`btn-select ${selectMode ? 'active' : ''}`} onClick={toggleSelectMode}>Select</button>
-                <button className="btn-primary" onClick={() => setShowDialog(true)}>+ New Project</button>
+                <button className="btn-primary" onClick={() => setShowCreateProjectDialog(true)}>+ New Project</button>
               </div>
             </div>
             <div className="projects-grid" ref={gridRef}>
@@ -227,11 +226,11 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
         </div>
       </div>
 
-      {showDialog && (
-        <NewProjectDialog
+      {showCreateProjectDialog && (
+        <ProjectDialog
           projects={projects}
-          onClose={() => setShowDialog(false)}
-          onSubmit={(data) => { onAddProject(data); setShowDialog(false); }}
+          onClose={() => setShowCreateProjectDialog(false)}
+          onSubmit={(data) => { onAddProject(data); setShowCreateProjectDialog(false); }}
         />
       )}
 
@@ -246,17 +245,7 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
       )}
 
       {showAccount && user && (
-        <div className="dialog-overlay" onClick={() => setShowAccount(false)}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="dialog-header">
-              <h2>Account</h2>
-              <button className="btn-close" onClick={() => setShowAccount(false)}>✕</button>
-            </div>
-            <div className="setting">
-              <p><strong>Account Name:</strong> {user.displayName}</p>
-            </div>
-          </div>
-        </div>
+        <AccountDialog user={user} onClose={() => setShowAccount(false)} />
       )}
 
       {showPhraseConfirm && (
@@ -266,9 +255,8 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
           onCancel={() => setShowPhraseConfirm(false)}
         />
       )}
-
     </div>
   );
 }
 
-export default GridView;
+export default DashboardView;

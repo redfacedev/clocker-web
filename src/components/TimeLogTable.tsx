@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatTime, formatDate, formatDuration, getDurationSeconds, isActive } from '../utils/TimeUtils';
-import { Tag, TimeLog } from '../types';
+import { LogSortColumn, Tag, TimeLog } from '../types';
 import ConfirmDialog from './ConfirmDialog';
 import TagDropdown from './TagDropdown';
 import './TimeLogTable.css';
@@ -10,19 +10,19 @@ interface Props {
   tags: Tag[];
   onEdit: (log: TimeLog) => void;
   onDelete: (log: TimeLog) => void;
-  onSort: (column: number) => void;
+  onSort: (column: LogSortColumn) => void;
   onTagChange: (log: TimeLog, tagId: string | null) => void;
   onCreateTag: (log: TimeLog) => void;
   onDeleteTag: (tagId: string) => void;
   onEditTag: (tagId: string, tagData: Omit<Tag, 'id'>) => void;
-  sortColumn: number;
+  sortColumn: LogSortColumn;
   sortOrder: 'asc' | 'desc';
 }
 
 function TimeLogTable({ logs, tags, onEdit, onDelete, onSort, onTagChange, onCreateTag, onDeleteTag, onEditTag, sortColumn, sortOrder }: Props) {
   const [deleteConfirmLog, setDeleteConfirmLog] = useState<TimeLog | null>(null);
 
-  const getSortIcon = (column: number) => {
+  const getSortIcon = (column: LogSortColumn) => {
     if (sortColumn !== column) return '⇅';
     return sortOrder === 'asc' ? '↑' : '↓';
   };
@@ -32,10 +32,10 @@ function TimeLogTable({ logs, tags, onEdit, onDelete, onSort, onTagChange, onCre
       <table className="time-log-table">
         <thead>
           <tr>
-            <th onClick={() => onSort(0)} className="sortable">Date {getSortIcon(0)}</th>
+            <th onClick={() => onSort('date')} className="sortable">Date {getSortIcon('date')}</th>
             <th>Start Time</th>
             <th>End Time</th>
-            <th onClick={() => onSort(1)} className="sortable">Duration {getSortIcon(1)}</th>
+            <th onClick={() => onSort('duration')} className="sortable">Duration {getSortIcon('duration')}</th>
             <th style={{ textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>

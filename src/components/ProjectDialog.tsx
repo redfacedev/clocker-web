@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import IconSelector from './IconSelector';
 import { ICON_IDS, IconId, Project, ProjectFormData } from '../types';
-import './NewProjectDialog.css';
+import './ProjectDialog.css';
 
 const NAME_FIRST = [
   'Client', 'Admin', 'Analytics', 'Internal', 'Core', 'Cloud',
@@ -67,7 +67,7 @@ interface Props {
   onSubmit: (data: ProjectFormData) => void;
 }
 
-function NewProjectDialog({ project, projects = [], onClose, onSubmit }: Props) {
+function ProjectDialog({ project, projects = [], onClose, onSubmit }: Props) {
   const [name, setName] = useState(project?.name ?? '');
   const [description, setDescription] = useState(project?.description ?? '');
   const [icon, setIcon] = useState<IconId>(project?.icon ?? 'clock');
@@ -205,4 +205,4 @@ function NewProjectDialog({ project, projects = [], onClose, onSubmit }: Props) 
   );
 }
 
-export default NewProjectDialog;
+export default ProjectDialog;
