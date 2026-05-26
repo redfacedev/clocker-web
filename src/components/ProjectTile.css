@@ -8,16 +8,11 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  transform-style: preserve-3d;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition: transform 0.18s ease, background-color 0.15s ease;
 }
 
 .project-tile:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transform: scale(1.03);
 }
 
 .project-tile.selected {

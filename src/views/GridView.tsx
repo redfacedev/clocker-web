@@ -42,9 +42,7 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
   const [showPhraseConfirm, setShowPhraseConfirm] = useState(false);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [sortMethod, setSortMethod] = useState(() => LocalStorage.getSortMethod());
-  const hasHover = useRef(window.matchMedia('(hover: hover)').matches);
   const gridRef = useRef<HTMLDivElement>(null);
   const prevPositions = useRef<Map<string, DOMRect>>(new Map());
 
@@ -150,8 +148,6 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
   return (
     <div
       className="grid-view"
-      onMouseMove={(e) => { if (hasHover.current) setMousePos({ x: e.clientX, y: e.clientY }); }}
-      onMouseLeave={() => setMousePos(null)}
     >
       <header className="grid-header">
         <h1>Clocker</h1>
@@ -207,7 +203,6 @@ function GridView({ projects, onProjectSelect, onAddProject, onDeleteProjects, o
                       onClick={() => handleTileClick(project)}
                       selectMode={selectMode}
                       selected={selectedIds.has(project.id)}
-                      mousePos={mousePos}
                       onStarToggle={() => onStarProject(project.id)}
                       logSyncVersion={logSyncVersion}
                     />

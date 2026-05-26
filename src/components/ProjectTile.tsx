@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { LocalStorage } from '../utils/LocalStorage';
 import { formatDuration, getDurationSeconds, isActive } from '../utils/TimeUtils';
 import { Project } from '../types';
@@ -12,18 +12,14 @@ interface Props {
   onClick: () => void;
   selectMode: boolean;
   selected: boolean;
-  mousePos: { x: number; y: number } | null;
   onStarToggle: () => void;
   logSyncVersion: number;
 }
 
-function ProjectTile({ project, onClick, selectMode, selected, mousePos, onStarToggle, logSyncVersion }: Props) {
+function ProjectTile({ project, onClick, selectMode, selected, onStarToggle, logSyncVersion }: Props) {
   const [baseTotalSeconds, setBaseTotalSeconds] = useState(0);
   const [activeStartTime, setActiveStartTime] = useState<Date | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [hovered, setHovered] = useState(false);
-  const [rotation, setRotation] = useState({ x: 0, y: 0 });
-  const tileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const logs = LocalStorage.loadLogs(project.id);
@@ -42,41 +38,15 @@ function ProjectTile({ project, onClick, selectMode, selected, mousePos, onStarT
     return () => clearInterval(interval);
   }, [activeStartTime]);
 
-  useEffect(() => {
-    if (!tileRef.current || !mousePos) {
-      setRotation({ x: 0, y: 0 });
-      return;
-    }
-    const strength = LocalStorage.getOrbitStrength();
-    const inverted = LocalStorage.getInvertOrbit();
-    const rect = tileRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const distX = (mousePos.x - centerX) / (rect.width / 2);
-    const distY = (mousePos.y - centerY) / (rect.height / 2);
-    let rotX = distY * strength;
-    let rotY = distX * -strength;
-    if (inverted) { rotX = -rotX; rotY = -rotY; }
-    setRotation({
-      x: Math.max(-strength, Math.min(strength, rotX)),
-      y: Math.max(-strength, Math.min(strength, rotY)),
-    });
-  }, [mousePos]);
-
   const totalTime = baseTotalSeconds + elapsedSeconds;
   const isClocked = !!activeStartTime;
 
   const classes = ['project-tile', selected ? 'selected' : ''].filter(Boolean).join(' ');
-  const transform = `perspective(1200px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale(${hovered ? 1.07 : 1}) translateZ(0)`;
 
   return (
     <div
-      ref={tileRef}
       className={classes}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ transform }}
     >
       {selectMode ? (
         <div className={`tile-checkbox${selected ? ' checked' : ''}`}>

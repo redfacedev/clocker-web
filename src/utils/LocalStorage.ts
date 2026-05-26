@@ -1,12 +1,10 @@
 import { IconId, Project, Tag, TimeLog } from '../types';
-import { DEFAULT_DELETE_PHRASE, DEFAULT_INVERT_ORBIT, DEFAULT_ORBIT_STRENGTH, DEFAULT_SORT_METHOD } from './SettingsDefaults';
+import { DEFAULT_DELETE_PHRASE, DEFAULT_SORT_METHOD } from './SettingsDefaults';
 
 const PROJECTS_KEY = 'clocker_projects';
 const LOGS_PREFIX = 'clocker_logs_';
 const BACKUPS_PREFIX = 'clocker_backups_';
 const DELETE_PHRASE_KEY = 'clocker_delete_phrase';
-const ORBIT_STRENGTH_KEY = 'clocker_orbit_strength';
-const INVERT_ORBIT_KEY = 'clocker_invert_orbit';
 const SORT_METHOD_KEY = 'clocker_sort_method';
 
 const MAX_BACKUPS_PER_PROJECT = 5;
@@ -89,24 +87,6 @@ export const LocalStorage = {
 
   setDeletePhrase(phrase: string): void {
     localStorage.setItem(DELETE_PHRASE_KEY, phrase);
-  },
-
-  getOrbitStrength(): number {
-    const storedValue = localStorage.getItem(ORBIT_STRENGTH_KEY);
-    return storedValue !== null ? parseFloat(storedValue) : DEFAULT_ORBIT_STRENGTH;
-  },
-
-  setOrbitStrength(strength: number): void {
-    localStorage.setItem(ORBIT_STRENGTH_KEY, String(strength));
-  },
-
-  getInvertOrbit(): boolean {
-    const storedValue = localStorage.getItem(INVERT_ORBIT_KEY);
-    return storedValue !== null ? storedValue === 'true' : DEFAULT_INVERT_ORBIT;
-  },
-
-  setInvertOrbit(invert: boolean): void {
-    localStorage.setItem(INVERT_ORBIT_KEY, String(invert));
   },
 
   getSortMethod(): string {
