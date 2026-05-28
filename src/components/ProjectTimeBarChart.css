@@ -1,0 +1,30 @@
+.project-bar-chart {
+  padding: 8px 0 0;
+}
+
+.project-bar-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 360px;
+  color: var(--text-light);
+  font-size: 15px;
+}
+
+.project-bar-tooltip {
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.project-bar-tooltip-name {
+  color: var(--text-light);
+  margin-bottom: 2px;
+}
+
+.project-bar-tooltip-time {
+  color: var(--text);
+  font-weight: 500;
+}

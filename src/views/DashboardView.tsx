@@ -11,6 +11,7 @@ import { LocalStorage } from '../utils/LocalStorage';
 import { getDurationSeconds, isActive } from '../utils/TimeUtils';
 import { Project, ProjectFormData } from '../types';
 import ActivityCalendar from '../components/ActivityCalendar';
+import ProjectTimeBarChart from '../components/ProjectTimeBarChart';
 import './DashboardView.css';
 
 const SORT_OPTIONS = [
@@ -220,6 +221,10 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
               <div className="analytics-graph-card">
                 <h3 className="analytics-graph-title">Daily Activity</h3>
                 <ActivityCalendar projects={projects} />
+              </div>
+              <div className="analytics-graph-card">
+                <h3 className="analytics-graph-title">Time by Project</h3>
+                <ProjectTimeBarChart projects={projects} logSyncVersion={logSyncVersion} />
               </div>
             </div>
           </div>
