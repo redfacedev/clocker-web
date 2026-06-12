@@ -9,7 +9,7 @@ import SignInDialog from '../components/SignInDialog';
 import AccountDialog from '../components/AccountDialog';
 import { LocalStorage } from '../utils/LocalStorage';
 import { getDurationSeconds, isActive } from '../utils/TimeUtils';
-import { Project, ProjectFormData } from '../types';
+import { Project, ProjectFormData, StoredBackup } from '../types';
 import ActivityCalendar from '../components/ActivityCalendar';
 import ProjectTimeBarChart from '../components/ProjectTimeBarChart';
 import './DashboardView.css';
@@ -34,9 +34,11 @@ interface Props {
   onGithubSignIn: () => void;
   onSignOut: () => void;
   logSyncVersion: number;
+  backup: StoredBackup | null;
+  onBackupAction: () => void;
 }
 
-function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjects, onStarProject, user, onGoogleSignIn, onGithubSignIn, onSignOut, logSyncVersion }: Props) {
+function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjects, onStarProject, user, onGoogleSignIn, onGithubSignIn, onSignOut, logSyncVersion, backup, onBackupAction }: Props) {
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
@@ -152,6 +154,13 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
       <header className="dashboard-header">
         <h1>Clocker</h1>
         <div className="header-controls">
+          <button
+            className="btn-secondary btn-backup"
+            onClick={onBackupAction}
+            disabled={!backup || (backup.snapshot.projects.length === 0 && Object.values(backup.snapshot.logs).every(l => l.length === 0))}
+          >
+            {backup?.isFuture ? 'Undo Recovery' : 'Recover from Backup'}
+          </button>
           <button className="btn-secondary btn-settings" onClick={() => setShowSettings(true)} title="Settings">⚙</button>
           {user === undefined ? null : user
             ? <>

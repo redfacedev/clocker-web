@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { AppStorage } from '../utils/Storage';
-import { LocalStorage } from '../utils/LocalStorage';
 import { formatDuration, formatTime, formatDate, getDurationSeconds, isActive } from '../utils/TimeUtils';
 import TimeLogTable from '../components/TimeLogTable';
 import EditLogDialog from '../components/EditLogDialog';
@@ -21,9 +20,10 @@ interface Props {
   onDelete: (projectId: string) => void;
   onActiveChange: (active: boolean) => void;
   onTagsChange: (projectId: string, tags: Tag[]) => void;
+  onBeforeLogMutation: () => void;
 }
 
-function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActiveChange, onTagsChange }: Props) {
+function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActiveChange, onTagsChange, onBeforeLogMutation }: Props) {
   const [logs, setLogs] = useState<TimeLog[]>([]);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [clockedIn, setClockedIn] = useState(false);
@@ -36,21 +36,13 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   const [tagTargetLog, setTagTargetLog] = useState<TimeLog | null>(null);
   const [sortColumn, setSortColumn] = useState<LogSortColumn>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [backupCount, setBackupCount] = useState(0);
-  const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
 
   useEffect(() => {
     AppStorage.loadLogs(project.id).then(loadedLogs => {
       setLogs(loadedLogs);
       syncClockState(loadedLogs);
-      setBackupCount(LocalStorage.getBackupCount(project.id));
     });
   }, [project.id]);
-
-  const backupBeforeMutation = (currentLogs: TimeLog[]) => {
-    LocalStorage.createBackup(project.id, currentLogs);
-    setBackupCount(LocalStorage.getBackupCount(project.id));
-  };
 
   useEffect(() => {
     if (!clockedIn || !clockInTime) return;
@@ -72,7 +64,6 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   };
 
   const handleClockToggle = () => {
-    backupBeforeMutation(logs);
     const now = new Date();
     const updatedLogs = [...logs];
 
@@ -93,7 +84,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   };
 
   const handleDeleteRow = (log: TimeLog) => {
-    backupBeforeMutation(logs);
+    onBeforeLogMutation();
     const updatedLogs = logs.filter(existingLog => existingLog !== log);
     setLogs(updatedLogs);
     AppStorage.saveLogs(project.id, updatedLogs);
@@ -105,7 +96,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   };
 
   const handleEditLogDialogSubmit = (submittedLog: TimeLog) => {
-    backupBeforeMutation(logs);
+    if (editingLog) onBeforeLogMutation();
     let updatedLogs: TimeLog[];
     if (editingLog) {
       updatedLogs = logs.map(existingLog =>
@@ -120,7 +111,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   };
 
   const handleTagChange = (log: TimeLog, tagId: string | null) => {
-    backupBeforeMutation(logs);
+    onBeforeLogMutation();
     const updatedLogs = logs.map(existingLog =>
       existingLog === log ? { ...existingLog, tagId: tagId ?? undefined } : existingLog
     );
@@ -134,23 +125,12 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
   };
 
   const handleDeleteTag = (tagId: string) => {
-    const logsAffected = logs.some(log => log.tagId === tagId);
-    if (logsAffected) backupBeforeMutation(logs);
+    if (logs.some(log => log.tagId === tagId)) onBeforeLogMutation();
     const updatedTags = project.tags.filter(tag => tag.id !== tagId);
     onTagsChange(project.id, updatedTags);
     const updatedLogs = logs.map(existingLog => existingLog.tagId === tagId ? { ...existingLog, tagId: undefined } : existingLog);
     setLogs(updatedLogs);
     AppStorage.saveLogs(project.id, updatedLogs);
-  };
-
-  const handleRollback = () => {
-    const restoredLogs = LocalStorage.popLatestBackup(project.id);
-    if (!restoredLogs) return;
-    setLogs(restoredLogs);
-    AppStorage.saveLogs(project.id, restoredLogs);
-    syncClockState(restoredLogs);
-    setBackupCount(LocalStorage.getBackupCount(project.id));
-    setShowRollbackConfirm(false);
   };
 
   const handleEditTag = (tagId: string, tagData: Omit<Tag, 'id'>) => {
@@ -164,7 +144,7 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
     onTagsChange(project.id, updatedTags);
 
     if (tagTargetLog) {
-      backupBeforeMutation(logs);
+      onBeforeLogMutation();
       const updatedLogs = logs.map(existingLog =>
         existingLog === tagTargetLog ? { ...existingLog, tagId: newTag.id } : existingLog
       );
@@ -274,11 +254,6 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
         <div className="logs-header">
           <h2>Time Logs</h2>
           <div className="logs-actions">
-            {backupCount > 0 && (
-              <button className="btn-rollback" onClick={() => setShowRollbackConfirm(true)}>
-                ↩ Rollback{backupCount > 1 ? ` (${backupCount})` : ''}
-              </button>
-            )}
             <button className="btn-secondary" onClick={() => { setEditingLog(null); setShowEditLogDialog(true); }}>+ Add Entry</button>
             <button className="btn-secondary" onClick={handleExportCsv}>Export CSV</button>
           </div>
@@ -343,13 +318,6 @@ function DetailView({ project, projects = [], onBack, onEdit, onDelete, onActive
         />
       )}
 
-      {showRollbackConfirm && (
-        <ConfirmDialog
-          message={`Rollback to previous state?${backupCount > 1 ? ` (${backupCount - 1} backup${backupCount - 1 !== 1 ? 's' : ''} will remain)` : ' This is the last backup.'}`}
-          onConfirm={handleRollback}
-          onCancel={() => setShowRollbackConfirm(false)}
-        />
-      )}
     </div>
   );
 }

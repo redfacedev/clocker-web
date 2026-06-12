@@ -1,6 +1,6 @@
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { ICON_IDS, IconId, Project, Tag, TimeLog } from '../types';
+import { ICON_IDS, IconId, Project, StoredBackup, Tag, TimeLog } from '../types';
 
 interface FirestoreProject {
   id: string;
@@ -61,6 +61,12 @@ function fromFirestoreLog(firestoreLog: FirestoreTimeLog): TimeLog {
   };
 }
 
+interface FirestoreBackup {
+  projects: FirestoreProject[];
+  logs: Record<string, FirestoreTimeLog[]>;
+  isFuture: boolean;
+}
+
 export const CloudStorage = {
   async loadProjects(userId: string): Promise<Project[] | null> {
     const snapshot = await getDoc(doc(db, 'users', userId));
@@ -81,5 +87,35 @@ export const CloudStorage = {
 
   async saveLogs(userId: string, projectId: string, logs: TimeLog[]): Promise<void> {
     await setDoc(doc(db, 'users', userId, 'logs', projectId), { entries: logs.map(toFirestoreLog) });
+  },
+
+  async saveBackup(userId: string, backup: StoredBackup): Promise<void> {
+    const data: FirestoreBackup = {
+      projects: backup.snapshot.projects.map(toFirestoreProject),
+      logs: Object.fromEntries(
+        Object.entries(backup.snapshot.logs).map(([id, logs]) => [id, logs.map(toFirestoreLog)])
+      ),
+      isFuture: backup.isFuture,
+    };
+    await setDoc(doc(db, 'users', userId, 'backup', 'slot'), data);
+  },
+
+  async loadBackup(userId: string): Promise<StoredBackup | null> {
+    const snap = await getDoc(doc(db, 'users', userId, 'backup', 'slot'));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    if (!Array.isArray(data.projects) || typeof data.logs !== 'object' || data.logs === null) return null;
+    return {
+      snapshot: {
+        projects: (data.projects as FirestoreProject[]).map(fromFirestoreProject),
+        logs: Object.fromEntries(
+          Object.entries(data.logs as Record<string, FirestoreTimeLog[]>).map(([id, logs]) => [
+            id,
+            Array.isArray(logs) ? logs.map(fromFirestoreLog) : [],
+          ])
+        ),
+      },
+      isFuture: Boolean(data.isFuture),
+    };
   },
 };

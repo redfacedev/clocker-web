@@ -1,13 +1,11 @@
-import { IconId, Project, Tag, TimeLog } from '../types';
+import { IconId, Project, StoredBackup, Tag, TimeLog } from '../types';
 import { DEFAULT_DELETE_PHRASE, DEFAULT_SORT_METHOD } from './SettingsDefaults';
 
 const PROJECTS_KEY = 'clocker_projects';
 const LOGS_PREFIX = 'clocker_logs_';
-const BACKUPS_PREFIX = 'clocker_backups_';
+const BACKUP_KEY = 'clocker_backup';
 const DELETE_PHRASE_KEY = 'clocker_delete_phrase';
 const SORT_METHOD_KEY = 'clocker_sort_method';
-
-const MAX_BACKUPS_PER_PROJECT = 5;
 
 interface SerializedTimeLog {
   date: string;
@@ -16,10 +14,10 @@ interface SerializedTimeLog {
   tagId?: string;
 }
 
-interface SerializedBackup {
-  backupId: string;
-  timestamp: string;
-  logs: SerializedTimeLog[];
+interface SerializedBackupData {
+  projects: Project[];
+  logs: Record<string, SerializedTimeLog[]>;
+  isFuture: boolean;
 }
 
 function serializeLog(log: TimeLog): SerializedTimeLog {
@@ -97,44 +95,42 @@ export const LocalStorage = {
     localStorage.setItem(SORT_METHOD_KEY, method);
   },
 
-  // ── Backup system ────────────────────────────────────────────────────────────
-
-  createBackup(projectId: string, currentLogs: TimeLog[]): void {
-    const key = BACKUPS_PREFIX + projectId;
-    const raw = localStorage.getItem(key);
-    const existingBackups: SerializedBackup[] = raw ? JSON.parse(raw) : [];
-
-    const newBackup: SerializedBackup = {
-      backupId: `backup_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      timestamp: new Date().toISOString(),
-      logs: currentLogs.map(serializeLog),
+  saveBackup(backup: StoredBackup): void {
+    const data: SerializedBackupData = {
+      projects: backup.snapshot.projects,
+      logs: Object.fromEntries(
+        Object.entries(backup.snapshot.logs).map(([id, logs]) => [id, logs.map(serializeLog)])
+      ),
+      isFuture: backup.isFuture,
     };
-
-    existingBackups.push(newBackup);
-    if (existingBackups.length > MAX_BACKUPS_PER_PROJECT) existingBackups.shift(); // FIFO eviction
-
-    localStorage.setItem(key, JSON.stringify(existingBackups));
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(data));
   },
 
-  getBackupCount(projectId: string): number {
-    const raw = localStorage.getItem(BACKUPS_PREFIX + projectId);
-    if (!raw) return 0;
-    return (JSON.parse(raw) as SerializedBackup[]).length;
-  },
-
-  popLatestBackup(projectId: string): TimeLog[] | null {
-    const key = BACKUPS_PREFIX + projectId;
-    const raw = localStorage.getItem(key);
+  loadBackup(): StoredBackup | null {
+    const raw = localStorage.getItem(BACKUP_KEY);
     if (!raw) return null;
-    const backups: SerializedBackup[] = JSON.parse(raw);
-    if (backups.length === 0) return null;
-
-    const latestBackup = backups.pop()!; // remove most recent — backup is now destroyed
-    localStorage.setItem(key, JSON.stringify(backups));
-    return latestBackup.logs.map(deserializeLog);
-  },
-
-  deleteProjectBackups(projectId: string): void {
-    localStorage.removeItem(BACKUPS_PREFIX + projectId);
+    try {
+      const data = JSON.parse(raw);
+      if (!Array.isArray(data.projects) || typeof data.logs !== 'object' || data.logs === null) return null;
+      return {
+        snapshot: {
+          projects: (data.projects as StoredProject[]).map(p => ({
+            ...p,
+            active: p.active ?? false,
+            starred: p.starred ?? false,
+            tags: p.tags ?? [],
+          })),
+          logs: Object.fromEntries(
+            Object.entries(data.logs as Record<string, SerializedTimeLog[]>).map(([id, logs]) => [
+              id,
+              Array.isArray(logs) ? logs.map(deserializeLog) : [],
+            ])
+          ),
+        },
+        isFuture: Boolean(data.isFuture),
+      };
+    } catch {
+      return null;
+    }
   },
 };

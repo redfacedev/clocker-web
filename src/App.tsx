@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import './App.css';
 import DashboardView from './views/DashboardView';
@@ -7,7 +7,7 @@ import { LocalStorage } from './utils/LocalStorage';
 import { AppStorage } from './utils/Storage';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider, githubProvider } from './firebase';
-import { AppView, Project, ProjectFormData, Tag } from './types';
+import { AppSnapshot, AppView, Project, ProjectFormData, StoredBackup, Tag } from './types';
 import { generateProjectId } from './utils/idUtils';
 
 function App() {
@@ -16,6 +16,7 @@ function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
   const [logSyncVersion, setLogSyncVersion] = useState(0);
+  const [backup, setBackup] = useState<StoredBackup | null>(null);
 
   const handleProjectSelect = (project: Project) => {
     setSelectedProject(project);
@@ -63,7 +64,6 @@ function App() {
     const updatedProjects = projects.filter(project => project.id !== projectId);
     setProjects(updatedProjects);
     AppStorage.saveProjects(updatedProjects);
-    LocalStorage.deleteProjectBackups(projectId);
     setSelectedProject(null);
     setCurrentView('dashboard');
   };
@@ -101,9 +101,39 @@ function App() {
     AppStorage.saveProjects(updatedProjects);
   };
 
+  const captureCurrentSnapshot = useCallback((): AppSnapshot => ({
+    projects,
+    logs: Object.fromEntries(projects.map(p => [p.id, LocalStorage.loadLogs(p.id)])),
+  }), [projects]);
+
+  const handleBeforeLogMutation = useCallback(() => {
+    const newBackup: StoredBackup = { snapshot: captureCurrentSnapshot(), isFuture: false };
+    setBackup(newBackup);
+    AppStorage.saveBackup(newBackup);
+  }, [captureCurrentSnapshot]);
+
+  const handleBackupAction = useCallback(async () => {
+    if (!backup) return;
+    const currentSnapshot = captureCurrentSnapshot();
+    const targetSnapshot = backup.snapshot;
+    const newBackup: StoredBackup = { snapshot: currentSnapshot, isFuture: !backup.isFuture };
+    setBackup(newBackup);
+    await AppStorage.saveBackup(newBackup);
+    await AppStorage.saveProjects(targetSnapshot.projects);
+    setProjects(targetSnapshot.projects);
+    await Promise.all(
+      Object.entries(targetSnapshot.logs).map(([id, logs]) => AppStorage.saveLogs(id, logs))
+    );
+    setLogSyncVersion(v => v + 1);
+  }, [backup, captureCurrentSnapshot]);
+
   const handleGoogleSignIn = () => signInWithPopup(auth, googleProvider);
   const handleGithubSignIn = () => signInWithPopup(auth, githubProvider);
   const handleSignOut = () => signOut(auth);
+
+  useEffect(() => {
+    AppStorage.loadBackup().then(setBackup);
+  }, []);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (firebaseUser) => {
@@ -114,6 +144,8 @@ function App() {
         LocalStorage.saveProjects(loadedProjects);
         await AppStorage.syncAllLogs(loadedProjects.map(project => project.id));
         setLogSyncVersion(v => v + 1);
+        const loadedBackup = await AppStorage.loadBackup();
+        setBackup(loadedBackup);
       }
     });
   }, []);
@@ -132,6 +164,8 @@ function App() {
           onGithubSignIn={handleGithubSignIn}
           onSignOut={handleSignOut}
           logSyncVersion={logSyncVersion}
+          backup={backup}
+          onBackupAction={handleBackupAction}
         />
       ) : selectedProject && (
         <DetailView
@@ -142,6 +176,7 @@ function App() {
           onDelete={handleDeleteProject}
           onActiveChange={(active) => handleActiveChange(selectedProject.id, active)}
           onTagsChange={handleTagsChange}
+          onBeforeLogMutation={handleBeforeLogMutation}
         />
       )}
     </div>

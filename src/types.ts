@@ -52,3 +52,13 @@ export interface TimeLog {
 export type AppView = 'dashboard' | 'project-detail';
 
 export type LogSortColumn = 'date' | 'duration';
+
+export interface AppSnapshot {
+  projects: Project[];
+  logs: Record<string, TimeLog[]>;
+}
+
+export interface StoredBackup {
+  snapshot: AppSnapshot;
+  isFuture: boolean;
+}

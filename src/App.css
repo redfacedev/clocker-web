@@ -95,6 +95,12 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--text-light);
 }
 
+.btn-secondary:disabled {
+  color: var(--text-light);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .btn-danger {
   background-color: var(--danger);
   color: white;

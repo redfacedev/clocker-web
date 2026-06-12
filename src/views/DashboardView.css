@@ -189,7 +189,7 @@
   font-size: 24px;
   width: 42px;
   height: 42px;
-  padding: 0 0 1px 0;
+  padding: 0 0 4px 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,4 +213,8 @@
   height: 42px;
   font-size: 18.15px;
   padding-top: 7px;
+}
+
+.btn-backup {
+  font-size: 18.15px;
 }
