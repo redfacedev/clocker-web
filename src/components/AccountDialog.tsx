@@ -11,10 +11,12 @@ function AccountDialog({ user, onClose }: Props) {
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2>Account</h2>
-          <button className="btn-close" onClick={onClose}>✕</button>
         </div>
         <div className="setting">
           <p><strong>Account Name:</strong> {user.displayName}</p>
+        </div>
+        <div style={{display: 'flex', justifyContent: 'center', marginTop: '16px'}}>
+          <button onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
