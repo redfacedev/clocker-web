@@ -102,7 +102,7 @@ const ActivityCalendar = memo(function ActivityCalendar({ projects }: Props) {
             label={{ value: scale.label, angle: -90, position: 'insideLeft', dx: -12, fill: 'var(--text-light)', fontSize: 13 }}
             width={56}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border)' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border)' }} isAnimationActive={false} />
           <Line
             type="monotone"
             dataKey="value"

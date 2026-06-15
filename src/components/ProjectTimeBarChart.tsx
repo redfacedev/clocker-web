@@ -36,18 +36,18 @@ function getScale(maxSeconds: number): {
 } {
   if (maxSeconds < 60) return {
     label: 'Seconds',
-    convert: (s) => s,
+    convert: (s) => Math.round(s),
     format: (v) => `${Math.round(v)}s`,
   };
   if (maxSeconds < 3600) return {
     label: 'Minutes',
     convert: (s) => Math.round((s / 60) * 10) / 10,
-    format: (v) => `${v}m`,
+    format: (v) => `${Math.round(v * 10) / 10}m`,
   };
   return {
     label: 'Hours',
-    convert: (s) => Math.round((s / 3600) * 100) / 100,
-    format: (v) => `${v}h`,
+    convert: (s) => Math.round((s / 3600) * 10) / 10,
+    format: (v) => `${Math.round(v * 10) / 10}h`,
   };
 }
 
@@ -86,7 +86,7 @@ const ProjectTimeBarChart = memo(function ProjectTimeBarChart({ projects, logSyn
     [data, scale]
   );
 
-  const yMax = maxSeconds > 0 ? scale.convert(maxSeconds) * 1.15 : 1;
+  const yMax = maxSeconds > 0 ? Math.ceil(scale.convert(maxSeconds) * 1.2) : 1;
 
   if (projects.length === 0) {
     return (
@@ -116,10 +116,12 @@ const ProjectTimeBarChart = memo(function ProjectTimeBarChart({ projects, logSyn
             axisLine={false}
             tickFormatter={scale.format}
             domain={[0, yMax]}
+            tickCount={5}
+            allowDecimals={false}
             label={{ value: scale.label, angle: -90, position: 'insideLeft', dx: -12, fill: 'var(--text-light)', fontSize: 13 }}
             width={56}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-light)', opacity: 0.5 }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-light)', opacity: 0.5 }} isAnimationActive={false} />
           <Bar
             dataKey="value"
             fill="var(--primary)"
