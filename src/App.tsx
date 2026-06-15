@@ -85,13 +85,6 @@ function App() {
     AppStorage.saveProjects(updatedProjects);
   };
 
-  const handleDeleteProjects = (projectIds: string[]) => {
-    const idSet = new Set(projectIds);
-    const updatedProjects = projects.filter(project => !idSet.has(project.id));
-    setProjects(updatedProjects);
-    AppStorage.saveProjects(updatedProjects);
-  };
-
   const handleTagsChange = (projectId: string, tags: Tag[]) => {
     const updatedProjects = projects.map(project =>
       project.id === projectId ? { ...project, tags } : project
@@ -157,7 +150,6 @@ function App() {
           projects={projects}
           onProjectSelect={handleProjectSelect}
           onAddProject={handleAddProject}
-          onDeleteProjects={handleDeleteProjects}
           onStarProject={handleStarProject}
           user={user}
           onGoogleSignIn={handleGoogleSignIn}

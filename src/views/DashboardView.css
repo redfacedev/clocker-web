@@ -85,23 +85,6 @@
   font-size: 24px;
 }
 
-.btn-select {
-  font-size: 16.8px;
-  background: transparent;
-  color: var(--text);
-  border: 2px dashed var(--border);
-}
-
-.btn-select.active {
-  border-style: solid;
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.btn-select:hover {
-  background-color: var(--bg-light);
-}
-
 .projects-header {
   display: flex;
   align-items: center;
@@ -161,10 +144,6 @@
   gap: 8px;
 }
 
-.btn-delete-selected {
-  font-size: 15px;
-}
-
 .analytics-graphs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -183,16 +162,6 @@
   font-size: 15px;
   font-weight: 500;
   color: var(--text-light);
-}
-
-.btn-settings {
-  font-size: 24px;
-  width: 42px;
-  height: 42px;
-  padding: 0 0 4px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .btn-account {
@@ -217,4 +186,67 @@
 
 .btn-backup {
   font-size: 18.15px;
+}
+
+@media (max-width: 600px) {
+  .analytics-section {
+    display: none;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .header-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .header-controls .btn-account { order: 1; }
+  .header-controls .btn-auth   { order: 2; }
+  .header-controls .btn-backup { order: 3; }
+
+  .main-content {
+    padding: 0;
+  }
+
+  .projects-section {
+    gap: 0;
+  }
+
+  .projects-container {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    padding: 12px 16px;
+  }
+
+  .projects-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .projects-header-left {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .projects-header-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }

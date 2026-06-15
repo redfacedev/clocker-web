@@ -64,8 +64,8 @@ function TimeLogTable({ logs, tags, onEdit, onDelete, onSort, onTagChange, onCre
                         onDeleteTag={onDeleteTag}
                         onEditTag={onEditTag}
                       />
-                      <button className="btn-edit" onClick={() => onEdit(log)} title="Edit">✎ Edit</button>
-                      <button className="btn-delete" onClick={() => setDeleteConfirmLog(log)} title="Delete">✕ Delete</button>
+                      <button className="btn-edit" onClick={() => onEdit(log)} title="Edit">✎ <span className="btn-action-label">Edit</span></button>
+                      <button className="btn-delete" onClick={() => setDeleteConfirmLog(log)} title="Delete">✕ <span className="btn-action-label">Delete</span></button>
                     </div>
                   </td>
                 </tr>

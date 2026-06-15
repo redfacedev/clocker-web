@@ -10,13 +10,11 @@ import './ProjectTile.css';
 interface Props {
   project: Project;
   onClick: () => void;
-  selectMode: boolean;
-  selected: boolean;
   onStarToggle: () => void;
   logSyncVersion: number;
 }
 
-function ProjectTile({ project, onClick, selectMode, selected, onStarToggle, logSyncVersion }: Props) {
+function ProjectTile({ project, onClick, onStarToggle, logSyncVersion }: Props) {
   const [baseTotalSeconds, setBaseTotalSeconds] = useState(0);
   const [activeStartTime, setActiveStartTime] = useState<Date | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -41,25 +39,14 @@ function ProjectTile({ project, onClick, selectMode, selected, onStarToggle, log
   const totalTime = baseTotalSeconds + elapsedSeconds;
   const isClocked = !!activeStartTime;
 
-  const classes = ['project-tile', selected ? 'selected' : ''].filter(Boolean).join(' ');
-
   return (
-    <div
-      className={classes}
-      onClick={onClick}
-    >
-      {selectMode ? (
-        <div className={`tile-checkbox${selected ? ' checked' : ''}`}>
-          {selected && <span>✓</span>}
-        </div>
-      ) : (
-        <button
-          className={`tile-star${project.starred ? ' starred' : ''}`}
-          onClick={(e) => { e.stopPropagation(); onStarToggle(); }}
-        >
-          <img src={project.starred ? starFilledSvg : starUnfilledSvg} alt="Star" />
-        </button>
-      )}
+    <div className="project-tile" onClick={onClick}>
+      <button
+        className={`tile-star${project.starred ? ' starred' : ''}`}
+        onClick={(e) => { e.stopPropagation(); onStarToggle(); }}
+      >
+        <img src={project.starred ? starFilledSvg : starUnfilledSvg} alt="Star" />
+      </button>
       <div className="tile-icon">
         <ProjectIcon iconId={project.icon} className="icon-img" />
       </div>

@@ -213,3 +213,75 @@
   color: var(--text-light);
   font-variant-numeric: tabular-nums;
 }
+
+@media (max-width: 600px) {
+  .detail-view {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+  }
+
+  .btn-back {
+    top: 20px;
+    left: 16px;
+  }
+
+  .project-title-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-actions {
+    position: static;
+    justify-content: center;
+  }
+
+  .logs-section {
+    overflow: visible;
+    flex: none;
+  }
+
+  .table-container {
+    overflow-y: auto;
+    height: auto;
+    max-height: 50vh;
+  }
+
+  .clock-section {
+    padding: 14px 16px;
+    gap: 24px;
+  }
+
+  .logs-section {
+    padding: 8px 12px;
+  }
+
+  .logs-header {
+    margin-bottom: 10px;
+  }
+
+  .total-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .total-label {
+    text-align: center;
+  }
+
+  .tag-totals-scroll {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow-x: visible;
+    width: 100%;
+  }
+}

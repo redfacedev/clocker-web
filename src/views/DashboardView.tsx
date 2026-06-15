@@ -3,8 +3,6 @@ import type { User } from 'firebase/auth';
 import accountCircleIcon from '../assets/account_circle.svg';
 import ProjectTile from '../components/ProjectTile';
 import ProjectDialog from '../components/ProjectDialog';
-import SettingsDialog from '../components/SettingsDialog';
-import PhraseConfirmDialog from '../components/PhraseConfirmDialog';
 import SignInDialog from '../components/SignInDialog';
 import AccountDialog from '../components/AccountDialog';
 import { LocalStorage } from '../utils/LocalStorage';
@@ -27,7 +25,6 @@ interface Props {
   projects: Project[];
   onProjectSelect: (project: Project) => void;
   onAddProject: (data: ProjectFormData) => void;
-  onDeleteProjects: (projectIds: string[]) => void;
   onStarProject: (projectId: string) => void;
   user: User | null | undefined;
   onGoogleSignIn: () => void;
@@ -38,14 +35,11 @@ interface Props {
   onBackupAction: () => void;
 }
 
-function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjects, onStarProject, user, onGoogleSignIn, onGithubSignIn, onSignOut, logSyncVersion, backup, onBackupAction }: Props) {
+function DashboardView({ projects, onProjectSelect, onAddProject, onStarProject, user, onGoogleSignIn, onGithubSignIn, onSignOut, logSyncVersion, backup, onBackupAction }: Props) {
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set<string>());
-  const [showPhraseConfirm, setShowPhraseConfirm] = useState(false);
   const [sortMethod, setSortMethod] = useState(() => LocalStorage.getSortMethod());
   const gridRef = useRef<HTMLDivElement>(null);
   const prevPositions = useRef<Map<string, DOMRect>>(new Map());
@@ -119,36 +113,6 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
     LocalStorage.setSortMethod(e.target.value);
   };
 
-  const toggleSelectMode = () => {
-    setSelectMode(current => !current);
-    setSelectedIds(new Set());
-  };
-
-  const toggleTileSelect = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const handleDeleteSelected = () => setShowPhraseConfirm(true);
-
-  const handlePhraseConfirm = () => {
-    onDeleteProjects([...selectedIds]);
-    setSelectedIds(new Set());
-    setSelectMode(false);
-    setShowPhraseConfirm(false);
-  };
-
-  const handleTileClick = (project: Project) => {
-    if (selectMode) {
-      toggleTileSelect(project.id);
-      return;
-    }
-    onProjectSelect(project);
-  };
-
   return (
     <div className="dashboard-view">
       <header className="dashboard-header">
@@ -161,13 +125,12 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
           >
             {backup?.isFuture ? 'Undo Recovery' : 'Recover from Backup'}
           </button>
-          <button className="btn-secondary btn-settings" onClick={() => setShowSettings(true)} title="Settings">⚙</button>
           {user === undefined ? null : user
             ? <>
-                <button className="btn-secondary btn-auth" onClick={onSignOut}>Sign out</button>
                 <button className="btn-secondary btn-account" onClick={() => setShowAccount(true)}>
                   <img src={accountCircleIcon} alt="Account" />
                 </button>
+                <button className="btn-secondary btn-auth" onClick={onSignOut}>Sign out</button>
               </>
             : <button className="btn-secondary btn-auth" onClick={() => setShowSignIn(true)}>Sign In</button>
           }
@@ -190,12 +153,6 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
                 </div>
               </div>
               <div className="projects-header-actions">
-                {selectMode && selectedIds.size > 0 && (
-                  <button className="btn-danger btn-delete-selected" onClick={handleDeleteSelected}>
-                    Delete {selectedIds.size} selected
-                  </button>
-                )}
-                <button className={`btn-select ${selectMode ? 'active' : ''}`} onClick={toggleSelectMode}>Select</button>
                 <button className="btn-primary" onClick={() => setShowCreateProjectDialog(true)}>+ New Project</button>
               </div>
             </div>
@@ -209,9 +166,7 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
                   <div key={project.id} data-project-id={project.id}>
                     <ProjectTile
                       project={project}
-                      onClick={() => handleTileClick(project)}
-                      selectMode={selectMode}
-                      selected={selectedIds.has(project.id)}
+                      onClick={() => onProjectSelect(project)}
                       onStarToggle={() => onStarProject(project.id)}
                       logSyncVersion={logSyncVersion}
                     />
@@ -220,7 +175,7 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
               )}
             </div>
           </div>
-          <div className="projects-container">
+          <div className="projects-container analytics-section">
             <div className="projects-header">
               <div className="projects-header-left">
                 <h2 className="projects-title">Analytics</h2>
@@ -248,8 +203,6 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
         />
       )}
 
-      {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
-
       {showSignIn && (
         <SignInDialog
           onGoogleSignIn={() => { setShowSignIn(false); onGoogleSignIn(); }}
@@ -262,13 +215,6 @@ function DashboardView({ projects, onProjectSelect, onAddProject, onDeleteProjec
         <AccountDialog user={user} onClose={() => setShowAccount(false)} />
       )}
 
-      {showPhraseConfirm && (
-        <PhraseConfirmDialog
-          count={selectedIds.size}
-          onConfirm={handlePhraseConfirm}
-          onCancel={() => setShowPhraseConfirm(false)}
-        />
-      )}
     </div>
   );
 }
